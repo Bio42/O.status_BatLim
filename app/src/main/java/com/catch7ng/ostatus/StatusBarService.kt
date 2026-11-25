@@ -298,6 +298,7 @@ class StatusBarService : Service() {
         val scale=baseScale * 1.56f * (pref.getInt("duo_scale_v3_pct",100)/100f)
         val resolvedMode = resolvedColorMode()
         v=DuoIndicatorView(this, resolvedMode, pref.getBoolean("battery_percentage", BootPrefs.batteryPercentage(this)))
+        v.setBatteryFullAt(pref.getInt("battery_full_at", BootPrefs.batteryFullAt(this)))
         refreshColorMode()
         wm=getSystemService(WINDOW_SERVICE) as WindowManager
         baseMarginPx=((pref.getInt("margin5",7) + pref.getInt("duo_h_offset",0))*d).toInt()
@@ -337,6 +338,7 @@ class StatusBarService : Service() {
         if (::v.isInitialized) {
             val pref = getSharedPreferences("settings", MODE_PRIVATE)
             v.setBatteryPercentageEnabled(pref.getBoolean("battery_percentage", BootPrefs.batteryPercentage(this)))
+            v.setBatteryFullAt(pref.getInt("battery_full_at", BootPrefs.batteryFullAt(this)))
         }
         refreshLayoutFromPrefs()
         ensureOverlayAttached()

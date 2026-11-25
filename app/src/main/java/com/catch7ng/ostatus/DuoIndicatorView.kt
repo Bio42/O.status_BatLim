@@ -49,6 +49,15 @@ class DuoIndicatorView(
         invalidate()
     }
 
+    private var batteryFullAt = 100
+
+    fun setBatteryFullAt(value: Int) {
+        val fullAt = value.coerceIn(1, 100)
+        if (batteryFullAt == fullAt) return
+        batteryFullAt = fullAt
+        invalidate()
+    }
+
     fun setColorMode(value: String) {
         if (colorMode == value) return
         colorMode = value
@@ -151,15 +160,16 @@ class DuoIndicatorView(
 
         val cx = X(237f); val cy = Y(211f); val r = 163f * s
         val rect = RectF(cx-r, cy-r, cx+r, cy+r)
+        val displayedBatteryPercent = (batteryPercent.coerceIn(0,100) * 100 / batteryFullAt).coerceIn(0,100)
 
         val batteryProgressColor = when {
-            batteryPercent >= 100 -> Color.rgb(52,199,89)
+            displayedBatteryPercent >= 100 -> Color.rgb(52,199,89)
             charging -> Color.rgb(52,199,89)
             powerSaveMode -> Color.rgb(255,204,0)
-            batteryPercent <= 20 -> Color.rgb(255,59,48)
+            displayedBatteryPercent <= 20 -> Color.rgb(255,59,48)
             else -> active
         }
-        val showBatteryPercentage = batteryPercentageEnabled || batteryPercent <= 20
+        val showBatteryPercentage = batteryPercentageEnabled || displayedBatteryPercent <= 20
 
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 26f * s
@@ -171,7 +181,7 @@ class DuoIndicatorView(
             paint.color = inactive
             c.drawArc(rect, start, sweep, false, paint)
             paint.color = batteryProgressColor
-            c.drawArc(rect, start, sweep * (batteryPercent.coerceIn(0,100)/100f), false, paint)
+            c.drawArc(rect, start, sweep * (displayedBatteryPercent/100f), false, paint)
         } else {
             // Percentage mode is derived from the ORIGINAL locked C-ring.
             // Same centre, radius, stroke and LOWER ENDPOINTS. Only the top
@@ -181,7 +191,7 @@ class DuoIndicatorView(
 
             // Top opening boundaries. These alter only the upper portion of the
             // original track; the lower endpoints remain exactly at 151.5°/388.5°.
-            val isFullBattery = batteryPercent >= 100
+            val isFullBattery = displayedBatteryPercent >= 100
             val leftTopEnd = if (isFullBattery) 231f else 236f
             val rightTopStart = if (isFullBattery) 309f else 304f
             val leftSweep = leftTopEnd - originalStart
@@ -195,7 +205,7 @@ class DuoIndicatorView(
             // scale. The hidden top gap simply clips the part that would pass
             // behind the number.
             val progressEnd = originalStart +
-                237f * (batteryPercent.coerceIn(0,100) / 100f)
+                237f * (displayedBatteryPercent / 100f)
             paint.color = batteryProgressColor
 
             val leftProgressEnd = minOf(progressEnd, leftTopEnd)
@@ -215,7 +225,7 @@ class DuoIndicatorView(
             paint.textSize = 92f * s
             val fmBattery = paint.fontMetrics
             val batteryTextY = Y(60f) - (fmBattery.ascent + fmBattery.descent)/2f
-            c.drawText(batteryPercent.coerceIn(0,100).toString(), X(237f), batteryTextY, paint)
+            c.drawText(displayedBatteryPercent.toString(), X(237f), batteryTextY, paint)
         }
 
         // Locked cellular-dot geometry.

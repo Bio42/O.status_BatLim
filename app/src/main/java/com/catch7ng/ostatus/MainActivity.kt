@@ -1,6 +1,7 @@
 package com.catch7ng.ostatus
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.NotificationManager
 import android.animation.ValueAnimator
 import android.content.Intent
@@ -126,6 +127,12 @@ class MainActivity : AppCompatActivity() {
         batteryPercentageRow.setOnClickListener { batteryPercentageSwitch.requestToggle() }
         appearance.addView(batteryPercentageRow)
         appearance.addView(separatorView())
+        val batteryFullAtRow = row("Battery Full At")
+        val batteryFullAtValue = valueLabel("${prefs.getInt("battery_full_at", 100)}%")
+        batteryFullAtRow.addView(batteryFullAtValue)
+        batteryFullAtRow.setOnClickListener { showBatteryFullAtDialog(batteryFullAtValue) }
+        appearance.addView(batteryFullAtRow)
+        appearance.addView(separatorView())
         val positionRow = row("Position & Size")
         positionRow.addView(ForwardChevronView(this), LinearLayout.LayoutParams(dp(18), dp(32)))
         positionRow.setOnClickListener { startActivity(Intent(this, PositionSizeActivity::class.java)) }
@@ -196,6 +203,29 @@ class MainActivity : AppCompatActivity() {
         GeistTypography.apply(scroll)
         setContentView(scroll)
         refreshPermissionStates()
+    }
+
+    private fun showBatteryFullAtDialog(value: TextView) {
+        val picker = NumberPicker(this).apply {
+            minValue = 1
+            maxValue = 100
+            this.value = prefs.getInt("battery_full_at", 100).coerceIn(minValue, maxValue)
+            wrapSelectorWheel = false
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Battery Full At")
+            .setView(picker)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Set") { _, _ ->
+                val fullAt = picker.value
+                prefs.edit().putInt("battery_full_at", fullAt).apply()
+                BootPrefs.setBatteryFullAt(this, fullAt)
+                value.text = "$fullAt%"
+                if (prefs.getBoolean("duo_enabled", true) && Settings.canDrawOverlays(this)) {
+                    ContextCompat.startForegroundService(this, Intent(this, StatusBarService::class.java))
+                }
+            }
+            .show()
     }
 
     private fun cycleIndicatorColour() {

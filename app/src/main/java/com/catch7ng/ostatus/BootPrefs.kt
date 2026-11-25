@@ -20,6 +20,7 @@ object BootPrefs {
             .putString("color_mode", normal.getString("color_mode", null) ?: if (normal.contains("black5")) { if (normal.getBoolean("black5", false)) "black" else "white" } else "auto")
             .putBoolean("black5", normal.getBoolean("black5", false))
             .putBoolean("battery_percentage", normal.getBoolean("battery_percentage", false))
+            .putInt("battery_full_at", normal.getInt("battery_full_at", 100))
             .apply()
     }
 
@@ -49,6 +50,21 @@ object BootPrefs {
         } else {
             context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .getBoolean("battery_percentage", false)
+        }
+    }
+
+    fun setBatteryFullAt(context: Context, value: Int) {
+        deviceContext(context).getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putInt("battery_full_at", value.coerceIn(1, 100)).apply()
+    }
+
+    fun batteryFullAt(context: Context): Int {
+        val boot = deviceContext(context).getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return if (boot.contains("battery_full_at")) {
+            boot.getInt("battery_full_at", 100).coerceIn(1, 100)
+        } else {
+            context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getInt("battery_full_at", 100).coerceIn(1, 100)
         }
     }
 
