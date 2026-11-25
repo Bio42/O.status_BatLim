@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.content.SharedPreferences
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.view.View
@@ -50,6 +51,15 @@ class DuoIndicatorView(
     }
 
     private var batteryFullAt = 100
+    private var batteryFullAtListenerRegistered = false
+    private val batteryFullAtListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        if (key == "battery_full_at") {
+            setBatteryFullAt(prefs.getInt("battery_full_at", 100))
+        }
+    }
+
+    private val settings: SharedPreferences =
+        context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
     fun setBatteryFullAt(value: Int) {
         val fullAt = value.coerceIn(1, 100)
@@ -80,9 +90,19 @@ class DuoIndicatorView(
         }
     }
 
-    fun start() { handler.post(poll) }
+    fun start() {
+        if (!batteryFullAtListenerRegistered) {
+            settings.registerOnSharedPreferenceChangeListener(batteryFullAtListener)
+            batteryFullAtListenerRegistered = true
+        }
+        handler.post(poll)
+    }
     fun stop() {
         handler.removeCallbacks(poll)
+        if (batteryFullAtListenerRegistered) {
+            settings.unregisterOnSharedPreferenceChangeListener(batteryFullAtListener)
+            batteryFullAtListenerRegistered = false
+        }
         networkDisplayTracker?.stop()
         networkDisplayTracker = null
         trackedSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID
